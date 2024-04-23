@@ -1,0 +1,50 @@
+# Loading the packages I would potentially need
+library(plyr)
+library(ggplot2)
+library(Hmisc)
+library(lme4)
+library(car)
+library(betareg)
+library(emmeans)
+library(readxl)
+
+data = read_excel(file.choose()) # Opens excel file of data
+str(data) # Shows a short summary of the data
+
+data <- aggregate(data$response, list(data$agonist.conc, data$antagonist.conc, data$tissue.ID, data$agonist.name, data$antagonist.name), FUN = function(x) c(mean = mean(x), SD = sd(x))) # Aggregates data and finds the mean and SD, putting the new values in a matrix in the response column 
+colnames(data) <- c("agonist.conc", "antagonist.conc", "tissue.ID", "agonist.name", "antagonist.name", "response")
+
+PCT <- subset(data, antagonist.name == "Paracetamol")
+PCT$TransformX = log10(PCT$agonist.conc) # Transforms the 5-HT concentration into their Log10 value
+
+ggplot (PCT, aes(x=TransformX, y=response[, 1]))+ # finds the data to plot and the grouping variables 
+  geom_point()+ # Adds the default points at each data point
+  geom_line(aes(linetype = as.factor(antagonist.conc)))+ # Adds the default line connecting each data point 
+#  geom_linerange(aes(ymin=response[, 1]-response[, 2], ymax=response[, 1]+response[, 2]))+ # Defines our error bars, in this case it is the mean +/- 1 SD
+  xlab("Log10[Agonist] (uM)")+ # Defines the X axis label
+  ylab("Response (g)")+ # Defines the Y axis label
+  labs(title="Dose-Response", colour="Antagonist Concentration (uM)")+ # Defines the title and the legend label
+#  scale_colour_grey()+ # Adds a nice grey theme 
+  theme_minimal() # Adjusts some of the default settings for a more minimal looking graph 
+
+################################## BAR PLOT ##########################################
+
+data = read_excel(file.choose()) #opens excel file of data
+str(data) #shows a short summary of the data
+
+data2 <- aggregate(data$Response, list(data$Zacopride), FUN = function(x) c(M=mean(x), SD=sd(x)))
+data2$Response.Mean <- data2$x[, 1]  # Copies matrix data into new column
+data2$Response.SD <- data2$x[, 2]  # Copies matrix data into new column
+data2 <- data2[ , !(names(data2) %in% "x")]  # Removes the "Response" column
+colnames(data2) <- c("Zacopride", "Response.Mean", "Response.SD")
+data2$Zacopride = as.character(data2$Zacopride) # Changes the variable 'Zacopride' into character for easy graph creation
+str(data2)
+
+ggplot (data2, aes(x=Zacopride, y=Response.Mean, group=Zacopride))+
+  geom_bar(stat="identity")+
+  xlab("Zacopride Concentration (pM)")+
+  ylab("Response (g)")+
+  labs(title="Response to 1uM 5-HT")+
+  geom_errorbar(aes(ymin=Response.Mean-Response.SD, ymax=Response.Mean+Response.SD))+
+  scale_colour_grey()+
+  theme_minimal()
